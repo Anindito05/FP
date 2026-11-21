@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+pydantic[email]>=2
+sqlalchemy[asyncio]>=2.0
+asyncpg
+alembic
+argon2-cffi
+pyjwt
+cryptography
+httpx
+pytest
+pytest-asyncio
+ollama
+psycopg2-binary

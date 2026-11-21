@@ -1,0 +1,16 @@
+# Secrets and local configuration
+**/.env
+!**/.env.example
+
+# Python environments and generated files
+**/.venv/
+**/__pycache__/
+*.py[cod]
+
+# JavaScript dependencies and build output
+**/node_modules/
+**/dist/
+*.tsbuildinfo
+
+# Local model downloads
+**/models_store/
