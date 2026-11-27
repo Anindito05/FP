@@ -1,0 +1,105 @@
+datasets:
+  - id: cssrs_reddit
+    name: C-SSRS-annotated Reddit suicide-risk corpus
+    citation: TODO_VERIFY
+    license: TODO_VERIFY
+    access: agreement
+    annotation_method: TODO_VERIFY
+    validity_tier: A
+    label_schema: TODO_VERIFY
+    local_path: data/raw/cssrs_reddit/
+    adapter: jsonl
+    enabled: false
+    verified_by_human: false
+  - id: umd_clpsych
+    name: UMD/CLPsych Reddit suicidality shared-task data
+    citation: TODO_VERIFY
+    license: TODO_VERIFY
+    access: agreement
+    annotation_method: TODO_VERIFY
+    validity_tier: A
+    label_schema: TODO_VERIFY
+    local_path: data/raw/umd_clpsych/
+    adapter: jsonl
+    enabled: false
+    verified_by_human: false
+  - id: daic_woz
+    name: DAIC-WOZ clinical interview corpus
+    citation: TODO_VERIFY
+    license: TODO_VERIFY
+    access: agreement
+    annotation_method: TODO_VERIFY
+    validity_tier: A
+    label_schema: TODO_VERIFY
+    local_path: data/raw/daic_woz/
+    adapter: daic_woz
+    enabled: false
+    verified_by_human: false
+  - id: clef_erisk
+    name: CLEF eRisk data
+    citation: TODO_VERIFY
+    license: TODO_VERIFY
+    access: agreement
+    annotation_method: TODO_VERIFY
+    validity_tier: A
+    label_schema: TODO_VERIFY
+    local_path: data/raw/clef_erisk/
+    adapter: jsonl
+    enabled: false
+    verified_by_human: false
+  - id: goemotions
+    name: GoEmotions
+    citation: TODO_VERIFY
+    license: TODO_VERIFY
+    access: open
+    annotation_method: TODO_VERIFY
+    validity_tier: B
+    label_schema: TODO_VERIFY
+    local_path: data/raw/goemotions/
+    adapter: jsonl
+    enabled: false
+    verified_by_human: false
+  - id: empathetic_dialogues
+    name: EmpatheticDialogues
+    citation: TODO_VERIFY
+    license: TODO_VERIFY
+    access: open
+    annotation_method: TODO_VERIFY
+    validity_tier: B
+    label_schema: TODO_VERIFY
+    local_path: data/raw/empathetic_dialogues/
+    adapter: jsonl
+    enabled: false
+    verified_by_human: false
+  - id: dreaddit
+    name: Dreaddit
+    citation: TODO_VERIFY
+    license: TODO_VERIFY
+    access: open
+    annotation_method: TODO_VERIFY
+    validity_tier: B
+    label_schema: TODO_VERIFY
+    local_path: data/raw/dreaddit/
+    adapter: jsonl
+    enabled: false
+    verified_by_human: false
+  - id: cams
+    name: CAMS
+    citation: TODO_VERIFY
+    license: TODO_VERIFY
+    access: agreement
+    annotation_method: TODO_VERIFY
+    validity_tier: B
+    label_schema: TODO_VERIFY
+    local_path: data/raw/cams/
+    adapter: jsonl
+    enabled: false
+    verified_by_human: false
+instruments_guidance:
+  - C-SSRS ideation and behaviour structure: taxonomy only; not training data.
+  - PHQ-9 item 9: taxonomy and escalation guidance only; not training data.
+  - WHO mhGAP Intervention Guide emergency criteria: escalation guidance only; not training data.
+instruments_guidance:
+  - C-SSRS ideation and behaviour structure: taxonomy only; never ingested as examples.
+  - PHQ-9 item 9: taxonomy/escalation guidance only; never ingested as examples.
+  - WHO mhGAP Intervention Guide emergency criteria: escalation guidance only; never ingested as examples.

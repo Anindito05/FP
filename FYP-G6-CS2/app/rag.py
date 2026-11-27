@@ -1,18 +1,18 @@
-"""RAG insertion point for the next semester; retrieval is intentionally disabled today."""
+"""Wellness-knowledge RAG seam; classification retrieval is implemented in app.ml."""
 from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 
 @dataclass
 class ContextChunk:
-    text: str
-    source: str | None = None
+    text:str
+    source:str|None=None
 
-async def get_context(query: str, db: AsyncSession) -> list[ContextChunk]:
-    """Next-semester RAG insertion point. No corpus is used in this semester's build."""
+async def get_context(query:str,db:AsyncSession)->list[ContextChunk]:
+    """Next semester's reviewed wellness-content retrieval insertion point."""
     return []
 
-def build_messages(user_text: str, history: list[dict], chunks: list[ContextChunk], analysis) -> list[dict]:
+def build_messages(user_text,history,chunks,state,mode="normal"):
     from .prompts import get_prompt
-    system = get_prompt("companion.v1.md").format(emotion=analysis.emotion, intent=analysis.intent,
-        context="\n".join(c.text for c in chunks))
-    return [{"role":"system","content":system}, *history, {"role":"user","content":user_text}]
+    system=get_prompt("companion.v2.md").replace("{{MODE}}",mode).replace("{{MOOD_TREND}}",f"emotion={state.emotion_top}; trend={state.trend}; shift={state.shift_flag or 'none'}; level={state.level}")
+    if chunks: system += "\nReviewed wellness context (only use when directly relevant):\n"+"\n".join(c.text for c in chunks)
+    return [{"role":"system","content":system},*history,{"role":"user","content":user_text}]

@@ -1,32 +1,21 @@
 # Architecture
 
-College-scale support companion: React/Vite → FastAPI → SQLAlchemy async → Neon PostgreSQL, with Ollama Cloud Gemma for structured analysis, companion replies, and web-result extraction.
+## Runtime
+
+React/Vite/TypeScript client → FastAPI async API → SQLAlchemy 2 async/asyncpg → Neon PostgreSQL. Messages remain encrypted at rest. Classification uses a local embedder, a versioned disk shard index with bounded LRU page cache, RAG weighted-neighbour voting, a per-session mood tracker, and an always-on deterministic keyword net. The model is loaded once in FastAPI lifespan. Ollama Cloud Gemma 4 is called once for ordinary replies; level 4 uses a scripted response and never calls the companion. Verified helpline/web search stays unchanged.
 
 ```text
-React UI (memory access token; sessionStorage refresh token)
-  └─ FastAPI routers → services → encrypted message store / consent / risk events
-       ├─ risk.py deterministic normalized keyword net (always runs)
-       ├─ nlu.py analysis.v1 structured Ollama call; keyword OR analysis gates crisis
-       ├─ safety.py reviewed-needed static crisis text and output filter
-       ├─ rag.py get_context() → [] (next-semester insertion point)
-       ├─ prompts/*.v1.md loaded once and version-recorded
-       └─ help_search_service: Ollama search/fetch → extraction → digit verification
+chat turn → keyword net + local classifier → mood/level fusion → level 4 scripted crisis
+                                                        └→ Alex prompt + guard → one reply call
+future wellness RAG → app/rag.py:get_context() → reviewed public knowledge only
 ```
 
-## Request flow
+## Data and operations
 
-1. Authenticated chat checks data-logging consent, ownership, and idempotency; user text is encrypted before commit.
-2. A structured analysis call and deterministic keyword scan run concurrently. Medium/high from either signal routes to the scripted crisis path. Failed analysis falls back to keyword results and escalation trend, sets `keyword_fallback`, and uses a gentle-check-in prompt on ordinary turns.
-3. Only ordinary turns call the companion LLM. Recent history is included within a small fixed turn budget. Rule-based `check_response` runs on every generated reply.
-4. Prompt and model versions are recorded on `message_analysis`; message contents never enter application logs.
-5. Crisis flow presents an optional offer. Location search requires explicit `location_lookup` consent and user-entered country/city. Extracted phone digits must occur in fetched source text; returned results carry source URLs and a verification note.
+Dataset policy lives in `data/datasets.yaml`; no real or restricted dataset ships. `scripts/build_index.py` refuses unverified/Tier C sources and ignores Tier B unless explicitly enabled. Index artifacts go to ignored `models_store/index/<version>` and must be copied with the same version to deployment hosts. Neon stores audit metadata and compact mood snapshots, never embeddings or raw classifier inputs. `/health/ready` reports classifier mode, index, tiers and cache stats.
 
-## Persistence and operations
+Migrations 0001–0002 preserve auth, encrypted chat, risk review and verified help search; 0003 adds dataset/index manifests, message analysis fields and mood states. Migrations use the direct URL, API uses pooled `DATABASE_URL`.
 
-Neon pooled URL is for the app; direct URL is for Alembic. Both asyncpg URLs use `?ssl=require`. Migrations drop legacy `kb_sources`, `kb_chunks`, vector extension, and CSV-backed `helplines`; they add `prompt_versions` and TTL cache `help_search_cache`. No pgvector, model weights, or embeddings are used.
+## Boundaries and limits
 
-Run backend from `FYP-G6-CS2`: `uvicorn app.main:create_app --factory --reload --port 8000`. Run UI from sibling `FYP-G6-CS2-FRONTEND`: `npm run dev`. See [auth.md](auth.md) for PowerShell and bash setup.
-
-## Known limits
-
-Risk prompts and scripts are not clinically validated. Web results can be incomplete or wrong even when a phone number is present; verify sources manually. The cache key uses location terms, not user identity. The UI and admin functions are college-scale and require security, accessibility, and real-user ethics review before any pilot.
+This is a supportive companion, not therapy, diagnosis, or a clinical tool. The synthetic hashing embedder is only for local engineering demos; use configured sentence-transformers MiniLM on Python 3.11+ for semantic evaluation. No dataset candidate is verified or enabled by default. The severity mapping and crisis language need clinical review. `get_context()` remains reserved for next-semester wellness knowledge; classifier examples are not prompt context.

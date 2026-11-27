@@ -71,7 +71,7 @@ export function ChatPage(props: ChatPageProps) {
         <div className="chatHead">
           <div>
             <div className="eyebrow">YOUR PRIVATE SPACE</div>
-            <h2>How are you feeling?</h2>
+            <h2>Talk with Alex</h2>
           </div>
           <span className="online">● Here with you</span>
         </div>
@@ -95,7 +95,7 @@ export function ChatPage(props: ChatPageProps) {
                 {message.content}
                 {message.escalation_offer && (
                   <div className="escalate">
-                    <p>Would you like to explore a support option?</p>
+                    <p>{message.escalation_offer.text || "Would you like to explore a support option?"}</p>
                     <label className="consent">
                       <input
                         type="checkbox"

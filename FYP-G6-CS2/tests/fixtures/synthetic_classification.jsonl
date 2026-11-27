@@ -1,0 +1,7 @@
+{"synthetic":true,"dataset_id":"synthetic_demo","item_id":"s1","text":"I feel calm and glad the weekend is here","emotion":"joy","level":0,"intent":"smalltalk","tier":"synthetic"}
+{"synthetic":true,"dataset_id":"synthetic_demo","item_id":"s2","text":"I am confused about this assignment and a little frustrated","emotion":"confusion","level":1,"intent":"seek_info","tier":"synthetic"}
+{"synthetic":true,"dataset_id":"synthetic_demo","item_id":"s3","text":"I have been anxious and overwhelmed all week","emotion":"anxiety","level":2,"intent":"vent","tier":"synthetic"}
+{"synthetic":true,"dataset_id":"synthetic_demo","item_id":"s4","text":"I feel hopeless and like nothing will ever improve","emotion":"sadness","level":3,"intent":"seek_reassurance","tier":"synthetic"}
+{"synthetic":true,"dataset_id":"synthetic_demo","item_id":"s5","text":"I intend to end my life and have made a plan","emotion":"sadness","level":4,"intent":"crisis_adjacent","tier":"synthetic"}
+{"synthetic":true,"dataset_id":"synthetic_demo","item_id":"s6","text":"I want advice on how to manage a stressful exam","emotion":"fear","level":1,"intent":"seek_advice","tier":"synthetic"}
+{"synthetic":true,"dataset_id":"synthetic_demo","item_id":"s7","text":"I feel lonely and wish I had someone to talk to","emotion":"loneliness","level":2,"intent":"vent","tier":"synthetic"}

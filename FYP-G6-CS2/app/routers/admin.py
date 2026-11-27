@@ -1,6 +1,6 @@
 """Administrative and reviewer endpoints."""
 from uuid import UUID
-from fastapi import APIRouter,Depends,Query
+from fastapi import APIRouter,Depends,Query,HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..database import get_db
@@ -16,7 +16,13 @@ async def risk_queue(limit:int=Query(50,ge=1,le=200),user:User=Depends(require_r
 async def review_risk(event_id:UUID,data:RiskReviewIn,user:User=Depends(require_role("reviewer","admin")),db:AsyncSession=Depends(get_db)):await admin_service.review_risk_event(event_id,user.id,data.review_label,db)
 @router.get("/admin/metrics",response_model=MetricsOut)
 async def metrics(user:User=Depends(require_role("reviewer","admin")),db:AsyncSession=Depends(get_db)):return await admin_service.live_metrics(db)
+@router.get("/admin/sessions/{session_id}/mood")
+async def mood(session_id:UUID,user:User=Depends(require_role("reviewer","admin")),db:AsyncSession=Depends(get_db)):return await admin_service.mood_timeline(session_id,db)
 @router.post("/admin/eval")
-async def run_eval(dataset:str="data/eval_risk.csv",user:User=Depends(require_role("admin")),db:AsyncSession=Depends(get_db)):
- row=await admin_service.run_risk_eval(dataset,.3,db)
- return {"id":str(row.id),"precision":row.precision,"recall":row.recall,"f2":row.f2,"fnr":row.fnr,"latency_p95_ms":row.latency_p95_ms,"note":"Combined synthetic evaluation; use scripts/run_eval.py for ablations."}
+async def run_eval(user:User=Depends(require_role("admin"))):
+ from pathlib import Path
+ import subprocess,sys
+ script=Path(__file__).resolve().parents[2]/"scripts/run_eval.py"
+ result=subprocess.run([sys.executable,str(script)],capture_output=True,text=True,timeout=30)
+ if result.returncode: raise HTTPException(500,"Synthetic evaluation failed")
+ return {"report":result.stdout,"note":"Synthetic fixture only; not clinical evidence."}

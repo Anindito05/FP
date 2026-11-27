@@ -27,6 +27,10 @@ export interface ChatMessage {
   content: string;
   route: string;
   escalation_offer?: EscalationOffer;
+  level?: number;
+  trend?: string;
+  shift_flag?: string | null;
+  classifier_mode?: string;
 }
 
 export interface SupportResource {
@@ -50,6 +54,7 @@ export interface AdminData {
     avg_latency_ms?: number | null;
     escalation_rate?: number | null;
   } | null;
+  mood?: Array<{turn_index:number;level:number;instant_level:number;emotion_top:string;trend:string;shift_flag:string|null;index_version:string|null}>;
 }
 
 export type ConsentType = "data_logging" | "location_lookup" | "research_use";

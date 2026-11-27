@@ -1,41 +1,38 @@
-"""Run small synthetic safety ablation. Results are a smoke test, not clinical evidence."""
-import asyncio,csv,sys,time,statistics
+"""Synthetic-only pipeline evaluation. Results are engineering checks, not clinical evidence."""
+import argparse,json,statistics,sys,time
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from app.ml.risk import keyword_scan
-from app.ml.nlu import _model_analysis
-from app.models import EvalRun
-from app.config import get_settings
-from app.database import build_engine
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from app.ml.embedder import load_embedder
+from app.ml.index_store import IndexStore,build_index
+from app.ml.rag_classifier import RAGClassifier
+from app.ml.mood_tracker import MoodTracker
 
-def metrics(rows, predictions):
-    tp=sum(y and p for (_,y,_),p in zip(rows,predictions)); fp=sum((not y) and p for (_,y,_),p in zip(rows,predictions)); fn=sum(y and not p for (_,y,_),p in zip(rows,predictions))
-    precision=tp/(tp+fp) if tp+fp else 0; recall=tp/(tp+fn) if tp+fn else 0
-    return precision,recall,(5*precision*recall/(4*precision+recall) if precision+recall else 0),fn/(tp+fn) if tp+fn else 0
-
-async def main():
-    path=Path(__file__).resolve().parents[1]/"data/eval_risk.csv"
-    with path.open(encoding="utf-8",newline="") as f: rows=[(r["text"],r["label"]=="1",r["category"]) for r in csv.DictReader(f)]
-    kw=[]; llm=[]; combined=[]; lat=[]; model_lat=[]
-    for text,label,cat in rows:
-        started=time.perf_counter(); kw_hit=keyword_scan(text).severity!="none"; kw.append(kw_hit)
-        try:
-            a=await _model_analysis(text,[]); model_risk=a.risk_level in {"medium","high"}
-        except Exception: model_risk=False
-        model_lat.append((time.perf_counter()-started)*1000);llm.append(model_risk);combined.append(kw_hit or model_risk);lat.append((time.perf_counter()-started)*1000)
-    print("mode         precision recall F2    FNR   p50_ms p95_ms")
-    persisted=[]
-    for name,preds in (("keyword-only",kw),("LLM-only",llm),("combined",combined)):
-        p,r,f2,fnr=metrics(rows,preds);p50=statistics.median(lat);p95=sorted(lat)[int(.95*(len(lat)-1))];print(f"{name:12} {p:.3f}     {r:.3f}  {f2:.3f} {fnr:.3f} {p50:.1f} {p95:.1f}")
-        persisted.append(EvalRun(name=name,dataset=str(path),model_versions={"synthetic":True,"n":len(rows),"latency_p50_ms":p50},precision=p,recall=r,f2=f2,fnr=fnr,latency_p95_ms=p95))
-        cats=sorted({x[2] for x in rows});print("  per-category recall:",", ".join(f"{c}={sum(y and cat==c and pred for (_,y,cat),pred in zip(rows,preds))}/{sum(y and cat==c for _,y,cat in rows)}" for c in cats if any(y and cat==c for _,y,cat in rows)))
-    if get_settings().database_url:
-        engine=build_engine(get_settings().database_url);factory=async_sessionmaker(engine,expire_on_commit=False)
-        try:
-            async with factory() as db: db.add_all(persisted);await db.commit()
-            print("Saved three evaluation rows to eval_runs.")
-        finally: await engine.dispose()
-    else: print("DATABASE_URL is unset; results were not persisted.")
-    print("LIMIT: hand-written synthetic n=8; not a clinical or real-user evaluation. LLM-only/combined rows are not meaningful while Ollama is unavailable.")
-if __name__=="__main__": asyncio.run(main())
+def load_rows():
+    return [json.loads(x) for x in (Path(__file__).resolve().parents[1]/"tests/fixtures/synthetic_classification.jsonl").read_text(encoding="utf-8").splitlines()]
+def score(y,p):
+    tp=sum(a and b for a,b in zip(y,p));fp=sum((not a) and b for a,b in zip(y,p));fn=sum(a and not b for a,b in zip(y,p));precision=tp/(tp+fp) if tp+fp else 0;recall=tp/(tp+fn) if tp+fn else 0
+    return precision,recall,5*precision*recall/(4*precision+recall) if precision+recall else 0,fn/(tp+fn) if tp+fn else 0
+def main():
+    parser=argparse.ArgumentParser();parser.add_argument("--prompt-baseline",action="store_true");options=parser.parse_args()
+    rows=load_rows();embedder=load_embedder("hashing-n-gram-v1");root=Path(__file__).resolve().parents[1]/"models_store/eval"
+    manifest=build_index(rows,embedder,root,"synthetic-eval");store=IndexStore(root,32,2);store.load();clf=RAGClassifier(embedder,store,top_k=8,min_similarity=.01,confidence_threshold=.01)
+    true=[r["level"]>=3 for r in rows];kw=[];rag=[];combined=[];emo_true=[];emo_pred=[];lat=[]
+    for row in rows:
+        start=time.perf_counter();k=keyword_scan(row["text"]).severity!="none";out=clf.classify(row["text"]);lat.append((time.perf_counter()-start)*1000)
+        kw.append(k);rag.append(out.instant_level>=3);combined.append(k or out.instant_level>=3);emo_true.append(row["emotion"]);emo_pred.append(out.emotion_top)
+    prompt=[False]*len(rows); baseline_available=False
+    if options.prompt_baseline:
+        print("Prompt baseline unavailable in synthetic-only run; V2 prompt is retained for a separately configured fake-client harness.")
+    print("Ablation (synthetic only): mode         precision recall F2    FNR")
+    for name,pred in (("keyword-only",kw),("prompt-only (V2 baseline)",prompt),("RAG-only",rag),("combined",combined)):
+        p,r,f,fn=score(true,pred);print(f"{name:15} {p:.3f}     {r:.3f}  {f:.3f} {fn:.3f}")
+    classes=sorted(set(emo_true));f1=[]
+    for c in classes:
+        tp=sum(y==c and p==c for y,p in zip(emo_true,emo_pred));fp=sum(y!=c and p==c for y,p in zip(emo_true,emo_pred));fn=sum(y==c and p!=c for y,p in zip(emo_true,emo_pred));pr=tp/(tp+fp) if tp+fp else 0;re=tp/(tp+fn) if tp+fn else 0;f1.append(2*pr*re/(pr+re) if pr+re else 0)
+    print(f"Emotion macro-F1={statistics.mean(f1):.3f}; per-class="+", ".join(f"{c}:{v:.3f}" for c,v in zip(classes,f1)))
+    st=store.stats();print(f"Retrieval p50={statistics.median(lat):.3f}ms p95={sorted(lat)[int(.95*(len(lat)-1))]:.3f}ms RAM={st['ram_used_mb']:.3f}MB cache-hit={st['cache_hit_rate']:.3f} pages/query={st['pages_loaded_per_query']:.2f}")
+    print("V2 prompt-analysis prompt retained for offline baseline; live calls are intentionally disabled in this synthetic evaluator.")
+    print("Trajectory scripts: synthetic gradual escalation / abrupt spike / confusion / recovery; see tests/test_phase3_classifier.py")
+    print("LIMIT: hand-authored synthetic fixture only; not real users and not clinically validated. Tier B labels are not clinician-validated.")
+if __name__=="__main__": main()

@@ -1,29 +1,17 @@
-# Next-semester RAG design
+# RAG design
 
-## Goals and boundaries
+## This phase: classifier retrieval
 
-Ground ordinary factual wellness answers in a small, reviewed public corpus. Do not retrieve personal records, user conversations, crisis scripts, or unreviewed web pages. RAG must never override risk routing or be called for a flagged turn.
+`app/ml/rag_classifier.py` embeds each user message and a weighted short window of recent user turns. It searches emotion-class shards, votes with similarity-squared weights, applies minimum similarity and confidence/novelty reporting, and returns unknown when evidence is insufficient. Tier A verified examples may supply risk labels; Tier B verified examples supply emotions only when explicitly enabled. Tier C and unverified sources are rejected. See `docs/dataset-governance.md` for human data acquisition and auditing.
 
-## Corpus and sources
+`app/ml/index_store.py` reads versioned float16 disk shards, centroids and an emotion-neighbour graph. Small classes load hot; large classes page from disk under an LRU RAM cap. Low confidence or rising level expands cold paging. Build with `python scripts/build_index.py --manifest data/datasets.yaml`; use `--synthetic` only for pipeline demos. Artifacts under `models_store/index/<version>` are ignored by git and must be copied to each deployment host. `INDEX_VERSION` selects the loaded version without code changes.
 
-Use public, non-personal materials from WHO, NIMH, and university counseling or student-wellbeing pages. Keep publisher, title, canonical URL, retrieval date, license/terms, checksum, and review status. Review permissions and freshness before ingestion. Exclude forums, comments, and identifiable stories.
+The current hashing embedder makes tiny deterministic local fixtures possible without downloads. Configure `EMBED_MODEL` to a small English sentence-transformers MiniLM model for research use (Python 3.11+). Rebuild the entire index whenever the embed model changes.
 
-## Chunking and embeddings
+## Next semester: wellness knowledge
 
-Preserve headings and source boundaries; begin with 350–500 token chunks and 50–80 token overlap, then compare retrieval quality. Choose a maintained multilingual sentence embedding model that fits deployment and document version, dimensionality, and license. Benchmark against lexical search before selecting it. Do not commit model weights.
+Reuse the embedder interface and shard file format for reviewed, non-personal public coping/information material. Keep a separate index namespace and governance manifest from classifier examples. Implement only `app/rag.py:get_context(query, db)` to retrieve approved chunks with publisher/source metadata. Then extend `build_messages` to attach relevant chunks and validated citations. Never retrieve private conversation data or let knowledge retrieval influence safety routing. The seam currently returns an empty list.
 
-## PostgreSQL design
+## Evaluation limits
 
-After enabling pgvector by migration, add `kb_sources` (metadata and active/reviewed status) and `kb_chunks` (source FK, chunk index, plain public text, token count, embedding vector, heading metadata). Use HNSW with cosine distance after measuring Neon support and dataset size. Keep migrations reversible and test against a disposable Neon branch.
-
-## Plug-in point and citations
-
-Implement only `app/rag.py:get_context(query, db) -> list[ContextChunk]`. `chat_service` already calls it and passes chunks into prompt building. Return source metadata with each chunk. Companion answers should cite stable source IDs/URLs in a constrained format; validate that citations point to retrieved sources, render links in the UI, and avoid claiming a statement is sourced when no matching chunk is present.
-
-## Evaluation
-
-Create reviewed question/answer pairs with expected source IDs, measure recall@k, MRR, citation precision, answer groundedness, and abstention quality. Blindly compare the current prompted analysis with a fine-tuned classifier on a separate, consented, de-identified, clinically reviewed dataset; report calibration, per-category recall, F2, FNR, latency, and uncertainty. Synthetic data is only a pipeline check.
-
-## Helpline directory evolution
-
-Current web search is a fallback discovery path and verifies phone digits against fetched text. Replace it over time with a curated, reviewed, versioned directory (country/region, service, eligibility, hours, phone, source and verification date). Keep search as a fallback when no current directory entry exists; never let either a model or an embedding infer a number.
+The synthetic fixture verifies plumbing only. Real evaluations require permissioned datasets, held-out user/thread splits, per-tier reporting, calibration and clinical review; report “retrieval over clinician-annotated examples”, never “clinically validated classifier”.

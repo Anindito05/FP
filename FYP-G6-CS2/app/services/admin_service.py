@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy import select,func,delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..models import RiskEvent,EvalRun,Message,ChatSession,MessageAnalysis
+from ..models import RiskEvent,EvalRun,Message,ChatSession,MessageAnalysis,MoodState
 from ..schemas import MetricsOut
 
 async def review_risk_event(event_id:UUID,reviewer_id:UUID,label:str,db:AsyncSession)->None:
@@ -17,6 +17,10 @@ async def live_metrics(db:AsyncSession)->MetricsOut:
     total=await db.scalar(select(func.count()).select_from(RiskEvent)) or 0
     sessions=await db.scalar(select(func.count()).select_from(ChatSession)) or 0
     return MetricsOut(avg_latency_ms=float(lat) if lat is not None else None,escalation_rate=total/sessions if sessions else 0.0)
+
+async def mood_timeline(session_id:UUID,db:AsyncSession):
+    rows=(await db.scalars(select(MoodState).where(MoodState.session_id==session_id).order_by(MoodState.turn_index))).all()
+    return [{"turn_index":r.turn_index,"level":r.level,"instant_level":r.instant_level,"emotion_top":r.emotion_top,"trend":r.trend,"shift_flag":r.shift_flag,"index_version":r.index_version} for r in rows]
 async def run_risk_eval(dataset_path:str,threshold:float,db:AsyncSession)->EvalRun:
     import csv, time
     from pathlib import Path

@@ -270,11 +270,12 @@ export function useAppController() {
 
   async function openAdmin() {
     try {
-      const [events, metrics] = await Promise.all([
+      const [events, metrics, mood] = await Promise.all([
         api.request<AdminData["events"]>("/admin/risk-events"),
         api.request<NonNullable<AdminData["metrics"]>>("/admin/metrics"),
+        sessionId ? api.request<NonNullable<AdminData["mood"]>>(`/admin/sessions/${sessionId}/mood`) : Promise.resolve([]),
       ]);
-      setAdminData({ events, metrics });
+      setAdminData({ events, metrics, mood });
       setPage("admin");
     } catch (cause) {
       setError(messageOf(cause));

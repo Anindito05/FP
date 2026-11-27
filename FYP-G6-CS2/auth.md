@@ -2,9 +2,9 @@
 
 ## Setup
 
-Python 3.11+, Node 20+, Neon PostgreSQL, Ollama Cloud key. Configure backend `.env` from `.env.example`; pooled `DATABASE_URL` serves the API and direct `DATABASE_URL_DIRECT` serves Alembic. Use asyncpg URLs with `?ssl=require`. The first migration drops legacy RAG/helpline tables and creates the verified-search cache.
+Python 3.11+, Node 20+, Neon PostgreSQL and Ollama Cloud. `.env.example` lists API, auth, embedding, index paging, threshold, and mood settings. Use pooled `DATABASE_URL` for the API and direct `DATABASE_URL_DIRECT` for migrations. Keep credentials and private corpora out of git.
 
-### Windows PowerShell
+## Windows PowerShell
 
 ```powershell
 cd C:\Users\DELL\OneDrive\Documents\CODEX\FYP\FYP-G6-CS2
@@ -12,12 +12,14 @@ py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 Copy-Item .env.example .env
-# Edit .env
+# Set database credentials, secrets, Ollama settings
 alembic upgrade head
+python scripts/build_index.py --synthetic --version demo
+$env:INDEX_VERSION = "demo"
 uvicorn app.main:create_app --factory --reload --port 8000
 ```
 
-In a second terminal:
+Second terminal:
 
 ```powershell
 cd C:\Users\DELL\OneDrive\Documents\CODEX\FYP\FYP-G6-CS2-FRONTEND
@@ -26,34 +28,31 @@ npm install
 npm run dev
 ```
 
-### bash
+## bash
 
 ```bash
 cd FYP-G6-CS2
 python3.11 -m venv .venv && source .venv/bin/activate
 python -m pip install -r requirements.txt
 cp .env.example .env
-# Edit .env
+# Set database credentials, secrets and Ollama settings
 alembic upgrade head
-uvicorn app.main:create_app --factory --reload --port 8000
+python scripts/build_index.py --synthetic --version demo
+INDEX_VERSION=demo uvicorn app.main:create_app --factory --reload --port 8000
 ```
 
-Second terminal: `cd FYP-G6-CS2-FRONTEND && cp .env.example .env && npm install && npm run dev`.
+Frontend second terminal: `cd FYP-G6-CS2-FRONTEND && cp .env.example .env && npm install && npm run dev`.
 
 ## Environment variables
 
-Backend variables and defaults are fully listed in `.env.example`: database URLs, JWT/encryption keys, access/refresh TTLs, `OLLAMA_HOST`, `OLLAMA_API_KEY`, `LLM_MODEL`, timeout, CORS, rate limit, retention, search cache TTL, result limit, and preferred domains. UI uses `VITE_API_BASE_URL` in its `.env.example`.
+Existing variables cover auth, database, Ollama, CORS, retention, and help search. Phase 3 variables: `EMBED_MODEL` selects local embedding model (`hashing-n-gram-v1` is only a dependency-free demo); `INDEX_VERSION` and `INDEX_DIR` select on-disk index; `ALLOW_PEER_REVIEWED_NON_CLINICAL` defaults false; `RAM_BUDGET_MB`, `PAGE_SIZE`, `TOP_K`, and `MIN_SIMILARITY` control index search; `LEVEL_HIGH_THRESHOLD`, `LEVEL_CRITICAL_THRESHOLD`, `LEVEL_CONFIDENCE_THRESHOLD`, and `LEVEL_DECAY` configure calibrated level policy; `HYSTERESIS_TURNS`, `PREFETCH_NEIGHBOURS`, and `MOOD_SMOOTHING` set mood behavior. Tune thresholds only from an authorized held-out calibration split.
 
-## Auth API
+Index artifacts under `models_store/index/<version>` are git-ignored and must be securely copied to deployment hosts. Never store user text or embeddings in index/log/audit tables. `/api/v1/health/ready` reports classifier mode, index, tiers, and cache/RAM metrics.
 
-- `POST /api/v1/auth/register`: email, password, display name, accepted terms.
-- `POST /api/v1/auth/login`: email and password.
-- `POST /api/v1/auth/guest`: accepted terms.
-- `POST /api/v1/auth/refresh`: rotates refresh token; reuse revokes its family.
-- `POST /api/v1/auth/logout`, `GET/DELETE /api/v1/users/me`.
+## Auth, consent, resources
 
-Access token stays in React memory. Refresh token uses `sessionStorage`, which survives reload within a tab session but is accessible to same-origin scripts. Message content is encrypted at rest. Never commit `.env` files.
+Auth endpoints and consent requirements remain as before. Grant `data_logging` before chat and `location_lookup` before nearby search. Resource results retain source links and verification notes. Alex is an AI companion, not therapy or a crisis line.
 
-Grant `data_logging` consent before sending chats. Grant `location_lookup` before nearby search; provide city/country directly. Helpline search is public, but the UI only exposes it through the optional escalation flow. Lookup results may be empty and any shown number must include its source and verification note.
+## Human gates
 
-Health: `/api/v1/health/live` and `/api/v1/health/ready`. Synthetic evaluation: `python scripts/run_eval.py`; pytest uses fakes where configured. Do not treat synthetic metrics as evidence of effectiveness.
+Obtain and verify Tier A datasets and complete `TODO_VERIFY` in the registry. Have a clinician review levels, mappings and crisis wording. Confirm the actual Gemma 4 tag, manually check some helpline results, and receive ethics approval before any real-user pilot. See `docs/dataset-governance.md`.

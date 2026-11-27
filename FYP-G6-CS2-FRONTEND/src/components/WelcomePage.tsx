@@ -17,7 +17,7 @@ export function WelcomePage({ accepted, onAcceptedChange, onContinue }: WelcomeP
       <div className="notice">
         <b>A note before we begin</b>
         <p>
-          This is a support tool, not therapy or a crisis line. It does not diagnose or replace
+          Alex is an AI companion, not therapy or a crisis line. Alex does not diagnose or replace
           professional care.
         </p>
         <label>

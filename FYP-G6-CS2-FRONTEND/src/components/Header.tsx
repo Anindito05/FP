@@ -20,7 +20,7 @@ export function Header({
   return (
     <header>
       <a className="brand" onClick={() => setPage(signedIn ? "chat" : "welcome")}>
-        <span className="mark">k</span> kindred
+        <span className="mark">A</span> Alex
       </a>
       <span className="tag">A little space to breathe</span>
       {signedIn && (

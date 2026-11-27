@@ -10,7 +10,7 @@ from ..security import encrypt_text
 from .help_search_service import search_support
 
 async def create_offer(session:ChatSession,level:str,db:AsyncSession)->EscalationOffer:
-    return EscalationOffer(offer_id=uuid4(),text="Would you like help finding support resources?",options=["helpline","nearby_services","decline"])
+    return EscalationOffer(offer_id=uuid4(),text="Would you like to explore a support option?",options=["helpline","nearby_services","decline"])
 async def ensure_consent(user:User,type:str,db:AsyncSession)->None:
     consent=await db.scalar(select(Consent).where(Consent.user_id==user.id,Consent.type==type,Consent.granted.is_(True),Consent.revoked_at.is_(None)).order_by(Consent.created_at.desc()))
     if not consent: raise HTTPException(403,"Consent required")

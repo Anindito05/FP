@@ -31,6 +31,8 @@ export function AdminPage({ data, onReview, onBack }: AdminPageProps) {
         </div>
       ))}
       {!data.events.length && <p>No events are waiting for review.</p>}
+      <h3>Mood timeline (labels only)</h3>
+      {(data.mood ?? []).map((turn) => <div className="pref" key={turn.turn_index}><span><b>Turn {turn.turn_index}: {turn.emotion_top}, level {turn.level}</b><small>{turn.trend}{turn.shift_flag ? ` · ${turn.shift_flag} shift` : ""} · index {turn.index_version ?? "none"}</small></span></div>)}
       <button className="link" onClick={onBack}>
         ← Back to chat
       </button>

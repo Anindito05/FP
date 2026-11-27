@@ -1,0 +1,14 @@
+"""Add governed classification metadata and per-turn mood snapshots."""
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+revision="0003_rag_mood_alex";down_revision="0002_prompt_analysis_help_search";branch_labels=None;depends_on=None
+def upgrade():
+    for name,typ,default in (("emotion_dist","JSONB","'{}'::jsonb"),("level_dist","JSONB","'{}'::jsonb"),("instant_level","INTEGER","0"),("level","INTEGER","0"),("confidence","FLOAT","0"),("novelty","FLOAT","1"),("classifier_mode","VARCHAR(30)","'degraded'"),("index_version","VARCHAR(100)",None),("prompt_version","VARCHAR(100)",None)):
+        op.execute(f"ALTER TABLE message_analysis ADD COLUMN {name} {typ}"+(f" NOT NULL DEFAULT {default}" if default is not None else ""))
+    op.create_table("mood_states",sa.Column("id",postgresql.UUID(as_uuid=True),primary_key=True),sa.Column("created_at",sa.DateTime(timezone=True),server_default=sa.func.now(),nullable=False),sa.Column("session_id",postgresql.UUID(as_uuid=True),sa.ForeignKey("chat_sessions.id",ondelete="CASCADE"),nullable=False),sa.Column("turn_index",sa.Integer,nullable=False),sa.Column("level",sa.Integer,nullable=False),sa.Column("instant_level",sa.Integer,nullable=False),sa.Column("mood_vector",postgresql.JSONB,server_default="{}",nullable=False),sa.Column("emotion_top",sa.String(40),nullable=False),sa.Column("trend",sa.String(20),nullable=False),sa.Column("shift_flag",sa.String(20)),sa.Column("index_version",sa.String(100)),sa.UniqueConstraint("session_id","turn_index",name="uq_mood_session_turn"));op.create_index("ix_mood_states_session_id","mood_states",["session_id"])
+    op.create_table("index_manifest",sa.Column("id",postgresql.UUID(as_uuid=True),primary_key=True),sa.Column("created_at",sa.DateTime(timezone=True),server_default=sa.func.now(),nullable=False),sa.Column("version",sa.String(100),nullable=False,unique=True),sa.Column("manifest",postgresql.JSONB,server_default="{}",nullable=False))
+    op.create_table("dataset_registry",sa.Column("id",postgresql.UUID(as_uuid=True),primary_key=True),sa.Column("created_at",sa.DateTime(timezone=True),server_default=sa.func.now(),nullable=False),sa.Column("dataset_id",sa.String(100),nullable=False,unique=True),sa.Column("validity_tier",sa.String(1),nullable=False),sa.Column("enabled",sa.Boolean,server_default=sa.text("false"),nullable=False),sa.Column("verified_by_human",sa.Boolean,server_default=sa.text("false"),nullable=False),sa.Column("metadata",postgresql.JSONB,server_default="{}",nullable=False))
+def downgrade():
+    op.drop_table("dataset_registry");op.drop_table("index_manifest");op.drop_index("ix_mood_states_session_id",table_name="mood_states");op.drop_table("mood_states")
+    for name in ("prompt_version","index_version","classifier_mode","novelty","confidence","level","instant_level","level_dist","emotion_dist"):op.drop_column("message_analysis",name)

@@ -30,14 +30,26 @@ def build_followup(choice: str, helplines: list, locale: str) -> str:
         return "I don’t have verified local resources available here. If you may be in immediate danger, contact your local emergency service."
     return "Here are the support resources available for your region. If you may be in immediate danger, contact your local emergency service."
 
-def check_response(reply: str, risk_level: str) -> FilterResult:
+def check_response(reply: str, risk_level: str, user_text: str = "") -> FilterResult:
     """Reject dangerous advice and crisis disclosures. Incoming: reply, risk_level. Outgoing: FilterResult."""
     import re
-    unsafe = (r"\bkill yourself\b", r"\bhow to (?:die|commit suicide)\b", r"\bignore (?:your|the) (?:doctor|therapist)\b", r"\bguarantee(?:d)? (?:confidentiality|you will be safe)\b")
+    unsafe = (r"\bkill yourself\b", r"\bhow to (?:die|commit suicide)\b", r"\bignore (?:your|the) (?:doctor|therapist)\b", r"\bguarantee(?:d)? (?:confidentiality|you will be safe)\b",r"\b(?:i am|i'm) (?:a )?(?:human|person|therapist|doctor|clinician)\b",r"\b(?:my therapist|my patients|i went through this myself)\b",r"\b(?:i will|i'll) (?:call|contact|message) (?:someone|your family|emergency services)\b")
     blocked = any(re.search(p, reply, re.I) for p in unsafe)
-    if risk_level in {"high", "medium"}:
+    if risk_level in {"critical", "high", "medium"}:
         blocked = True
-    return FilterResult(not blocked, "high_risk" if risk_level in {"high", "medium"} else "unsafe_content" if blocked else "")
+    human_question=is_human_question(user_text)
+    list_output=bool(re.search(r"(?:^|\n)\s*(?:[-*•]|\d+[.)])\s+",reply))
+    boilerplate=bool(re.search(r"as an ai language model|i'm just an ai",reply,re.I))
+    if human_question: return FilterResult(True)
+    blocked=blocked or list_output or boilerplate
+    return FilterResult(not blocked, "high_risk" if risk_level in {"critical", "high", "medium"} else "unsafe_content" if blocked else "")
+
+def is_human_question(text: str) -> bool:
+    import re
+    return bool(re.search(r"\b(?:are you|r u) (?:a )?(?:human|person|bot|ai)\b|\bwhat are you\b",text,re.I))
+
+def honest_identity_reply() -> str:
+    return "I’m Alex, an AI companion, not a person. I can still listen and talk things through with you."
 
 def safe_fallback(locale: str, user_text: str = "") -> str:
     """Return a brief contextual, non-clinical reply if model generation fails."""

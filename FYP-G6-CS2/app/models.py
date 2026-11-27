@@ -123,3 +123,32 @@ class EvalRun(TimestampMixin, Base):
     fnr = __import__('sqlalchemy').Column(Float)
     groundedness = __import__('sqlalchemy').Column(Float)
     latency_p95_ms = __import__('sqlalchemy').Column(Float)
+
+class MoodState(TimestampMixin, Base):
+    __tablename__ = "mood_states"
+    session_id = __import__('sqlalchemy').Column(UUID(as_uuid=True), ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    turn_index = __import__('sqlalchemy').Column(Integer, nullable=False)
+    level = __import__('sqlalchemy').Column(Integer, nullable=False)
+    instant_level = __import__('sqlalchemy').Column(Integer, nullable=False)
+    mood_vector = __import__('sqlalchemy').Column(JSONB, nullable=False, server_default="{}")
+    emotion_top = __import__('sqlalchemy').Column(String(40), nullable=False)
+    trend = __import__('sqlalchemy').Column(String(20), nullable=False)
+    shift_flag = __import__('sqlalchemy').Column(String(20))
+    index_version = __import__('sqlalchemy').Column(String(100))
+    __table_args__ = (UniqueConstraint("session_id", "turn_index", name="uq_mood_session_turn"),)
+
+class IndexManifest(TimestampMixin, Base):
+    __tablename__ = "index_manifest"
+    version = __import__('sqlalchemy').Column(String(100), nullable=False, unique=True)
+    manifest = __import__('sqlalchemy').Column(JSONB, nullable=False, server_default="{}")
+
+class DatasetRegistry(TimestampMixin, Base):
+    __tablename__ = "dataset_registry"
+    dataset_id = __import__('sqlalchemy').Column(String(100), nullable=False, unique=True)
+    validity_tier = __import__('sqlalchemy').Column(String(1), nullable=False)
+    enabled = __import__('sqlalchemy').Column(Boolean, nullable=False, server_default=text("false"))
+    verified_by_human = __import__('sqlalchemy').Column(Boolean, nullable=False, server_default=text("false"))
+    metadata_json = __import__('sqlalchemy').Column("metadata", JSONB, nullable=False, server_default="{}")
+
+for _name, _type, _default in (("emotion_dist",JSONB,"{}"),("level_dist",JSONB,"{}"),("instant_level",Integer,"0"),("level",Integer,"0"),("confidence",Float,"0"),("novelty",Float,"1"),("classifier_mode",String(30),"degraded"),("index_version",String(100),None),("prompt_version",String(100),None)):
+    setattr(MessageAnalysis,_name,__import__('sqlalchemy').Column(_type,nullable=_default is not None,server_default=str(_default) if _default is not None else None))

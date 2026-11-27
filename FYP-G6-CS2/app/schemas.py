@@ -22,7 +22,7 @@ class SessionCreate(BaseModel): title: str | None = None; mode: str = "text"
 class SessionOut(BaseModel): model_config=ConfigDict(from_attributes=True); id: UUID; title: str | None; status: str; started_at: datetime; message_count: int
 class MessageIn(BaseModel): content: str = Field(min_length=1, max_length=2000); client_msg_id: str = Field(min_length=1, max_length=128)
 class EscalationOffer(BaseModel): offer_id: UUID; text: str; options: list[str]
-class MessageOut(BaseModel): id: UUID; role: str = "assistant"; content: str; route: str; emotion: str | None = None; escalation_offer: EscalationOffer | None = None; created_at: datetime | None = None
+class MessageOut(BaseModel): id: UUID; role: str = "assistant"; content: str; route: str; emotion: str | None = None; escalation_offer: EscalationOffer | None = None; created_at: datetime | None = None; level: int | None = None; trend: str | None = None; shift_flag: str | None = None; classifier_mode: str | None = None
 class EscalationResponse(BaseModel): offer_id: UUID; choice: str; country: str | None = None; region: str | None = None; city: str | None = None
 class HelplineOut(BaseModel): name: str; phone: str | None = None; url: str | None = None; source_url: str | None = None; hours: str | None = None; languages: list[str] = []; please_verify: str | None = None
 class NearbyServiceOut(BaseModel): name: str; phone: str | None = None; url: str | None = None; source_url: str | None = None; hours: str | None = None; languages: list[str] = []; please_verify: str | None = None

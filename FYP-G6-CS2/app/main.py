@@ -11,8 +11,10 @@ from .database import get_db, check_db_health, dispose_engine
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Initialize optional inference resources and dispose database engine."""
     from .prompts import get_prompt
-    for name in ("analysis.v1.md","companion.v1.md","gentle_checkin.v1.md","helpline_extract.v1.md","nearby_extract.v1.md"):
+    for name in ("analysis.v1.md","companion.v2.md","guard.v1.md","helpline_extract.v1.md","nearby_extract.v1.md"):
         get_prompt(name)
+    from .ml.classification import load_runtime
+    await __import__('asyncio').to_thread(load_runtime)
     app.state.models_ready = True
     yield
     await dispose_engine()
@@ -30,8 +32,9 @@ async def health_ready(db: AsyncSession = Depends(get_db)) -> dict:
         await build_llm_client(get_settings()).generate([{"role":"user","content":"Reply OK"}],2,0)
         llm_ok=True
     except Exception: pass
-    degraded=not llm_ok
-    return {"status": "ok" if ok else "not_ready", "database": ok, "llm_reachable":llm_ok, "analysis_mode":"degraded" if degraded else "normal"}
+    from .ml.classification import runtime_status
+    classifier=runtime_status()
+    return {"status": "ok" if ok else "not_ready", "database": ok, "llm_reachable":llm_ok, "classifier":"ready" if classifier["mode"]=="ready" else "degraded", "classifier_mode":classifier["mode"], "index_version":classifier["index_version"], "dataset_ids":classifier["dataset_ids"], "dataset_tiers":classifier["tiers"], "cache":classifier["stats"], "emotion_label_notice":"emotion labels are peer-reviewed but not clinician-validated" if get_settings().allow_peer_reviewed_non_clinical and "B" in classifier["tiers"] else None}
 
 def create_app() -> FastAPI:
     """Build versioned API. Incoming: none. Outgoing: FastAPI."""

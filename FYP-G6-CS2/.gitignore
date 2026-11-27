@@ -1,5 +1,6 @@
 .env
 __pycache__/
 models_store/
+data/raw/
 .venv/
 CODEX_PROMPT.md

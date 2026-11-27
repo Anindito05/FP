@@ -1,0 +1,8 @@
+{"synthetic":true,"dataset_id":"synthetic_demo","item_id":"35bc065d9d02431aae9128c19ffdad66","text":"I want to kill myself","emotion":"sadness","level":3,"intent":"vent","tier":"synthetic"}
+{"synthetic":true,"dataset_id":"synthetic_demo","item_id":"401596efe7884aebb7ed791eea084081","text":"I do not want to be alive anymore","emotion":"sadness","level":3,"intent":"vent","tier":"synthetic"}
+{"synthetic":true,"dataset_id":"synthetic_demo","item_id":"b4a06d77ce434f8ab7446a694faff091","text":"kys is all I can think about","emotion":"sadness","level":3,"intent":"vent","tier":"synthetic"}
+{"synthetic":true,"dataset_id":"synthetic_demo","item_id":"588a49f571e343578e56c0ee50c9ebe7","text":"I wanna d!e and cant go on","emotion":"sadness","level":3,"intent":"vent","tier":"synthetic"}
+{"synthetic":true,"dataset_id":"synthetic_demo","item_id":"0e830f0a087a42f29b4d33acbc7c8317","text":"Everything is hopeless; yesterday I said I might hurt myself","emotion":"sadness","level":3,"intent":"vent","tier":"synthetic"}
+{"synthetic":true,"dataset_id":"synthetic_demo","item_id":"76df697d057d42e59a4b1c32b4e4296b","text":"The movie character said they wanted to die","emotion":"neutral","level":1,"intent":"vent","tier":"synthetic"}
+{"synthetic":true,"dataset_id":"synthetic_demo","item_id":"359c3d73374d4ccbaade53272b3ee78d","text":"I feel anxious before my exam","emotion":"fear","level":1,"intent":"vent","tier":"synthetic"}
+{"synthetic":true,"dataset_id":"synthetic_demo","item_id":"fb319518a52e44c680c42c1bfd55991e","text":"I had a tiring day at work","emotion":"fear","level":1,"intent":"vent","tier":"synthetic"}

@@ -1,0 +1,11 @@
+# NEEDS CLINICAL REVIEW. C-SSRS/PHQ-9/mhGAP inform taxonomy structure only.
+mapping:
+  calm: 0
+  neutral: 0
+  mild_distress: 1
+  passive_ideation: 3
+  active_ideation: 4
+  plan: 4
+  intent: 4
+  preparatory_behaviour: 4
+  attempt: 4
